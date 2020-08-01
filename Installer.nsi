@@ -105,6 +105,7 @@ File /r ".\Plugin\*"
 SetOutPath "$DATAINSTDIR\Resources\plugins\xPilot\win_x64"
 
 File /r "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
+File /r "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
 
 WriteRegStr HKLM "Software\xPilot" "XPlane" $DATAINSTDIR
 
