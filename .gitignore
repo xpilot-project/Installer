@@ -1,3 +1,5 @@
 Client/*
 Output/*
 Plugin/win_x64/*
+*.dll
+Version.txt
