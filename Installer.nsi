@@ -104,8 +104,8 @@ File /r ".\Plugin\*"
 
 SetOutPath "$DATAINSTDIR\Resources\plugins\xPilot\win_x64"
 
-File /r "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
-File /r "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
+File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
+File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
 
 WriteRegStr HKLM "Software\xPilot" "XPlane" $DATAINSTDIR
 
@@ -127,6 +127,8 @@ File /r "..\Pilot-Client\bin\Release\*"
 File /r ".\Sounds"
 
 File "Vatsim.Fsd.ClientAuth.dll"
+File "7zxa.dll"
+
 
 WriteUninstaller "$INSTDIR\Uninstall.exe"
 
