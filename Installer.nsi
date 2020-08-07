@@ -6,7 +6,7 @@
 
 ; We want to stamp the version of the installer into its exe name.
 ; We will get the version number from the app itself.
-!system "ExtractVersionInfo.exe"
+!system "GetProductVersion.exe"
 !include "Version.txt"
 
 !include "x64.nsh"

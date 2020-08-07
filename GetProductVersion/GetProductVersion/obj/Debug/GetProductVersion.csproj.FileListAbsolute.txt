@@ -1,0 +1,7 @@
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\GetProductVersion\GetProductVersion\bin\Debug\GetProductVersion.exe.config
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\GetProductVersion\GetProductVersion\bin\Debug\GetProductVersion.exe
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\GetProductVersion\GetProductVersion\bin\Debug\GetProductVersion.pdb
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\GetProductVersion\GetProductVersion\obj\Debug\GetProductVersion.csprojAssemblyReference.cache
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\GetProductVersion\GetProductVersion\obj\Debug\GetProductVersion.csproj.CoreCompileInputs.cache
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\GetProductVersion\GetProductVersion\obj\Debug\GetProductVersion.exe
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\GetProductVersion\GetProductVersion\obj\Debug\GetProductVersion.pdb
