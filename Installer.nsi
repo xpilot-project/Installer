@@ -30,6 +30,7 @@ InstallDir "$LOCALAPPDATA\xPilot"
 ;Pages
 
 !define MUI_WELCOMEPAGE_TEXT "This program will guide you through the installation of xPilot."
+!define MUI_PAGE_CUSTOMFUNCTION_LEAVE WelcomeLeave
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_COMPONENTS
 
@@ -60,13 +61,24 @@ InstallDir "$LOCALAPPDATA\xPilot"
 ;Function
 
 Function CheckXplaneRunning
-  FindProcDLL::FindProc "X-Plane.exe"
-  IntCmp $R0 1 do_abort proceed proceed
-do_abort:
-  MessageBox MB_OK|MB_ICONEXCLAMATION "You must close X-Plane before installing."
+  ExecWait '"CheckProcessRunning.exe" "xplane"' $0
+  ${If} $0 == 1
+  MessageBox MB_OK|MB_ICONEXCLAMATION "You must close X-Plane before installing xPilot."
   Abort
-proceed:
-  Return
+  ${EndIf}
+FunctionEnd
+
+Function CheckXpilotRunning
+  ExecWait '"CheckProcessRunning.exe" "xpilot"' $0
+  ${If} $0 == 1
+  MessageBox MB_OK|MB_ICONEXCLAMATION "You must close xPilot before upgrading."
+  Abort
+  ${EndIf}
+FunctionEnd
+
+Function WelcomeLeave
+  Call CheckXplaneRunning
+  Call CheckXpilotRunning
 FunctionEnd
 
 Function StrSlash
@@ -134,8 +146,6 @@ done:
 FunctionEnd
 
 Function .onInit
-    call CheckXplaneRunning
-    
 	;set client install location
 	Push $INSTDIR
 	ReadRegStr $INSTDIR HKLM "Software\xPilot" "Client"
@@ -193,6 +203,10 @@ File /r ".\Sounds"
 
 File "Vatsim.Fsd.ClientAuth.dll"
 File "7zxa.dll"
+
+SetOutPath "$INSTDIR\Plugin"
+File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
+File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
 
 WriteUninstaller "$INSTDIR\Uninstall.exe"
 

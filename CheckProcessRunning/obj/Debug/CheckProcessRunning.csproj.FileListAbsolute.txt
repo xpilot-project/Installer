@@ -1,0 +1,7 @@
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CheckProcessRunning\bin\Debug\CheckProcessRunning.exe.config
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CheckProcessRunning\bin\Debug\CheckProcessRunning.exe
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CheckProcessRunning\bin\Debug\CheckProcessRunning.pdb
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CheckProcessRunning\obj\Debug\CheckProcessRunning.csprojAssemblyReference.cache
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CheckProcessRunning\obj\Debug\CheckProcessRunning.csproj.CoreCompileInputs.cache
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CheckProcessRunning\obj\Debug\CheckProcessRunning.exe
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CheckProcessRunning\obj\Debug\CheckProcessRunning.pdb
