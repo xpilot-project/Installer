@@ -29,7 +29,7 @@ InstallDir "$LOCALAPPDATA\xPilot"
 ;--------------------------------
 ;Pages
 
-!define MUI_WELCOMEPAGE_TEXT "This installer will guide you through the installation of xPilot."
+!define MUI_WELCOMEPAGE_TEXT "This program will guide you through the installation of xPilot."
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_COMPONENTS
 
