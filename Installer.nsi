@@ -2,14 +2,16 @@
 ;--------------------------------
 ;Include Modern UI
 
-!include "MUI2.nsh"
+Unicode True
+
+!include MUI2.nsh
+!include x64.nsh
+!include LogicLib.nsh
 
 ; We want to stamp the version of the installer into its exe name.
 ; We will get the version number from the app itself.
 !system "GetProductVersion.exe"
 !include "Version.txt"
-
-!include "x64.nsh"
 
 ;--------------------------------
 ;Configuration
@@ -61,7 +63,7 @@ InstallDir "$LOCALAPPDATA\xPilot"
 ;Function
 
 Function CheckXplaneRunning
-  ExecWait '"CheckProcessRunning.exe" "xplane"' $0
+  ExecWait '"$PLUGINSDIR\CheckProcessRunning.exe" "xplane"' $0
   ${If} $0 == 1
   MessageBox MB_OK|MB_ICONEXCLAMATION "You must close X-Plane before installing xPilot."
   Abort
@@ -69,7 +71,7 @@ Function CheckXplaneRunning
 FunctionEnd
 
 Function CheckXpilotRunning
-  ExecWait '"CheckProcessRunning.exe" "xpilot"' $0
+  ExecWait '"$PLUGINSDIR\CheckProcessRunning.exe" "xpilot"' $0
   ${If} $0 == 1
   MessageBox MB_OK|MB_ICONEXCLAMATION "You must close xPilot before upgrading."
   Abort
@@ -77,40 +79,19 @@ Function CheckXpilotRunning
 FunctionEnd
 
 Function WelcomeLeave
+  SetOutPath $PLUGINSDIR
+  File "CheckProcessRunning.exe"
+  File "CopyPluginFiles.exe"
+  
+  SetOutPath $PLUGINSDIR\Plugin
+  File /r ".\Plugin\*"
+  
+  SetOutPath $PLUGINSDIR\Plugin\win_x64
+  File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
+  File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
+  
   Call CheckXplaneRunning
   Call CheckXpilotRunning
-FunctionEnd
-
-Function StrSlash
-  Exch $R3 ; $R3 = needle ("\" or "/")
-  Exch
-  Exch $R1 ; $R1 = String to replacement in (haystack)
-  Push $R2 ; Replaced haystack
-  Push $R4 ; $R4 = not $R3 ("/" or "\")
-  Push $R6
-  Push $R7 ; Scratch reg
-  StrCpy $R2 ""
-  StrLen $R6 $R1
-  StrCpy $R4 "\"
-  StrCmp $R3 "/" loop
-  StrCpy $R4 "/"  
-loop:
-  StrCpy $R7 $R1 1
-  StrCpy $R1 $R1 $R6 1
-  StrCmp $R7 $R3 found
-  StrCpy $R2 "$R2$R7"
-  StrCmp $R1 "" done loop
-found:
-  StrCpy $R2 "$R2$R4"
-  StrCmp $R1 "" done loop
-done:
-  StrCpy $R3 $R2
-  Pop $R7
-  Pop $R6
-  Pop $R4
-  Pop $R2
-  Pop $R1
-  Exch $R3
 FunctionEnd
 
 Function un.StrSlash
@@ -145,7 +126,9 @@ done:
   Exch $R3
 FunctionEnd
 
-Function .onInit
+Function .onInit  
+    InitPluginsDir
+    
 	;set client install location
 	Push $INSTDIR
 	ReadRegStr $INSTDIR HKLM "Software\xPilot" "Client"
@@ -160,29 +143,7 @@ Section "xPilot Plugin" SecCopyPlugin
 
 SectionIn RO
 
-FileOpen $0 $LOCALAPPDATA\x-plane_install_11.txt r
- LOOP:
-  IfErrors exit_loop
-  FileRead $0 $1
-  
-  ; Replace slashes
-  Push $1
-  Push "/"
-  Call StrSlash
-  Pop $R0
-  
-  ; If path is not empty, copy plugin files
-  ${If} $R0 != ""
-  SetOutPath $R0"\Resources\plugins\xPilot"
-  File /r ".\Plugin\*"
-  
-  SetOutPath $R0"\Resources\plugins\xPilot\win_x64"
-  File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
-  File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
-  ${EndIf}
-Goto LOOP
-  exit_loop:
-FileClose $0
+ExecWait '"$PLUGINSDIR\CopyPluginFiles.exe" "$PLUGINSDIR"'
 
 SectionEnd
 
@@ -203,10 +164,6 @@ File /r ".\Sounds"
 
 File "Vatsim.Fsd.ClientAuth.dll"
 File "7zxa.dll"
-
-SetOutPath "$INSTDIR\Plugin"
-File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
-File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
 
 WriteUninstaller "$INSTDIR\Uninstall.exe"
 

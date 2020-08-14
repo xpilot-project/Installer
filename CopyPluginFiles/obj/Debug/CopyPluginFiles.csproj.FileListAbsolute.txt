@@ -1,0 +1,7 @@
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CopyPluginFiles\bin\Debug\CopyPluginFiles.exe.config
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CopyPluginFiles\bin\Debug\CopyPluginFiles.exe
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CopyPluginFiles\bin\Debug\CopyPluginFiles.pdb
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CopyPluginFiles\obj\Debug\CopyPluginFiles.csproj.CoreCompileInputs.cache
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CopyPluginFiles\obj\Debug\CopyPluginFiles.exe
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CopyPluginFiles\obj\Debug\CopyPluginFiles.pdb
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\CopyPluginFiles\obj\Debug\CopyPluginFiles.csprojAssemblyReference.cache

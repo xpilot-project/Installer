@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{7C028E75-D088-42A1-84D0-0E751B903926}</ProjectGuid>
+    <ProjectGuid>{E0D64622-88E3-4F06-BD61-C698D27E51C9}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>CheckProcessRunning</RootNamespace>
-    <AssemblyName>CheckProcessRunning</AssemblyName>
+    <RootNamespace>CopyPluginFiles</RootNamespace>
+    <AssemblyName>CopyPluginFiles</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
