@@ -27,6 +27,12 @@ InstallDir "$LOCALAPPDATA\xPilot"
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_COMPONENTS
 
+!define MUI_PAGE_HEADER_TEXT "xPilot Pilot Client Installation"
+!define MUI_PAGE_HEADER_SUBTEXT "Choose folder to install the xPilot Pilot Client"
+!define MUI_DIRECTORYPAGE_TEXT_DESTINATION "xPilot Pilot Client Install Location"
+!define MUI_DIRECTORYPAGE_TEXT_TOP "The setup will install the xPilot Pilot Client in the following folder.$\r$\n$\r$\nIt is recommended you leave it set to the local application data folder to prevent permission issues.$\r$\n$\r$\nTo install in a different folder, click Browse and select another folder."	
+!insertmacro MUI_PAGE_DIRECTORY
+
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_NOAUTOCLOSE
 !define MUI_FINISHPAGE_RUN "$INSTDIR\xPilot.exe"
@@ -54,6 +60,31 @@ FunctionEnd
 ;--------------------------------
 ;Installer Sections
 
+Function isEmptyDir
+  # Stack ->                    # Stack: <directory>
+  Exch $0                       # Stack: $0
+  Push $1                       # Stack: $1, $0
+  FindFirst $0 $1 "$0\*.*"
+  strcmp $1 "." 0 _notempty
+    FindNext $0 $1
+    strcmp $1 ".." 0 _notempty
+      ClearErrors
+      FindNext $0 $1
+      IfErrors 0 _notempty
+        FindClose $0
+        Pop $1                  # Stack: $0
+        StrCpy $0 1
+        Exch $0                 # Stack: 1 (true)
+        goto _end
+     _notempty:
+       FindClose $0
+       ClearErrors
+       Pop $1                   # Stack: $0
+       StrCpy $0 0
+       Exch $0                  # Stack: 0 (false)
+  _end:
+FunctionEnd
+
 Function CopyPlugin
 ${IF} $_PluginDir != ""
     SetOutPath "$_PluginDir\Resources\plugins\xPilot\Resources"
@@ -65,6 +96,38 @@ ${IF} $_PluginDir != ""
 ${ENDIF}
 FunctionEnd
 
+Function StrSlash
+  Exch $R3 ; $R3 = needle ("\" or "/")
+  Exch
+  Exch $R1 ; $R1 = String to replacement in (haystack)
+  Push $R2 ; Replaced haystack
+  Push $R4 ; $R4 = not $R3 ("/" or "\")
+  Push $R6
+  Push $R7 ; Scratch reg
+  StrCpy $R2 ""
+  StrLen $R6 $R1
+  StrCpy $R4 "\"
+  StrCmp $R3 "/" loop
+  StrCpy $R4 "/"  
+loop:
+  StrCpy $R7 $R1 1
+  StrCpy $R1 $R1 $R6 1
+  StrCmp $R7 $R3 found
+  StrCpy $R2 "$R2$R7"
+  StrCmp $R1 "" done loop
+found:
+  StrCpy $R2 "$R2$R4"
+  StrCmp $R1 "" done loop
+done:
+  StrCpy $R3 $R2
+  Pop $R7
+  Pop $R6
+  Pop $R4
+  Pop $R2
+  Pop $R1
+  Exch $R3
+FunctionEnd
+
 Section "xPilot Plugin" Section_Plugin
 
 SectionIn RO
@@ -73,8 +136,13 @@ FileOpen $0 $LOCALAPPDATA\x-plane_install_11.txt r
 LOOP:
 IfErrors exit_loop
 FileRead $0 $1
+    Push $1
+    Push "/"
+    Call StrSlash
+    Pop $R0
+    
     Push $_PluginDir
-    StrCpy $_PluginDir "$1"
+    StrCpy $_PluginDir "$R0"
     Call CopyPlugin
     Pop $_PluginDir
 Goto LOOP
@@ -158,6 +226,10 @@ File "Sounds\PrivateMessage.wav"
 File "Sounds\RadioMessage.wav"
 File "Sounds\SelCal.wav"
 
+SetOutPath "$INSTDIR\Plugin"
+File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
+File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
+
 WriteUninstaller "$INSTDIR\Uninstall.exe"
 WriteRegStr HKLM "Software\xPilot" "Client" $INSTDIR
 
@@ -197,6 +269,38 @@ ${IF} $_PluginDir != ""
 ${ENDIF}
 FunctionEnd
 
+Function un.StrSlash
+  Exch $R3 ; $R3 = needle ("\" or "/")
+  Exch
+  Exch $R1 ; $R1 = String to replacement in (haystack)
+  Push $R2 ; Replaced haystack
+  Push $R4 ; $R4 = not $R3 ("/" or "\")
+  Push $R6
+  Push $R7 ; Scratch reg
+  StrCpy $R2 ""
+  StrLen $R6 $R1
+  StrCpy $R4 "\"
+  StrCmp $R3 "/" loop
+  StrCpy $R4 "/"  
+loop:
+  StrCpy $R7 $R1 1
+  StrCpy $R1 $R1 $R6 1
+  StrCmp $R7 $R3 found
+  StrCpy $R2 "$R2$R7"
+  StrCmp $R1 "" done loop
+found:
+  StrCpy $R2 "$R2$R4"
+  StrCmp $R1 "" done loop
+done:
+  StrCpy $R3 $R2
+  Pop $R7
+  Pop $R6
+  Pop $R4
+  Pop $R2
+  Pop $R1
+  Exch $R3
+FunctionEnd
+
 Section "Uninstall"
 
 ; delete plugin
@@ -204,8 +308,13 @@ FileOpen $0 $LOCALAPPDATA\x-plane_install_11.txt r
 LOOP:
 IfErrors exit_loop
 FileRead $0 $1
+    Push $1
+    Push "/"
+    Call un.StrSlash
+    Pop $R0
+    
     Push $_PluginDir
-    StrCpy $_PluginDir "$1"
+    StrCpy $_PluginDir "$R0"
     Call un.DeletePlugin
     Pop $_PluginDir
 Goto LOOP
