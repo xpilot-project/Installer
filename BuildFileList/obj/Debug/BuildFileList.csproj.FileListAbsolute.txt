@@ -1,0 +1,7 @@
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\BuildFileList\bin\Debug\BuildFileList.exe.config
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\BuildFileList\bin\Debug\BuildFileList.exe
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\BuildFileList\bin\Debug\BuildFileList.pdb
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\BuildFileList\obj\Debug\BuildFileList.csprojAssemblyReference.cache
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\BuildFileList\obj\Debug\BuildFileList.csproj.CoreCompileInputs.cache
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\BuildFileList\obj\Debug\BuildFileList.exe
+C:\Users\Justin\Documents\GitHub\xpilot-project\Installer\BuildFileList\obj\Debug\BuildFileList.pdb
