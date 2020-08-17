@@ -6,6 +6,7 @@ Unicode True
 !include MUI2.nsh
 !include x64.nsh
 !include LogicLib.nsh
+!include WordFunc.nsh
 
 !system "GetProductVersion.exe"
 !include "Version.txt"
@@ -85,15 +86,53 @@ Function isEmptyDir
   _end:
 FunctionEnd
 
+Function Trim
+Pop $R0
+Loop:
+    StrCpy $R1 $R0 1 -1
+    StrCmp $R1 "/" TrimRight
+    StrCmp $R1 "\" TrimRight
+    Goto Done
+TrimRight:
+    StrCpy $R0 $R0 -1
+    Goto Loop
+Done:
+    DetailPrint $R0
+FunctionEnd
+
 Function CopyPlugin
-${IF} $_PluginDir != ""
-    SetOutPath "$_PluginDir\Resources\plugins\xPilot\Resources"
-    File /r ".\Plugin\Resources\*"
+    ;StrCpy $1 $_PluginDir "" -1
+    ;StrCmp $1 "\" 0 +2
+    ;StrCpy $_PluginDir $_PluginDir -1
     
-    SetOutPath "$_PluginDir\Resources\plugins\xPilot\win_x64"
-    File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
-    File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
-${ENDIF}
+    ${If} $R0 != ""
+    
+    ${EndIf}
+    
+    ;${WordReplace} $R1 "\" "" "}*" $R2
+    ;${WordReplace} $R0 "/" "\" "+" $R1
+    ;${WordReplace} $R1 "\" "" "}*" $R2
+    ;${WordReplace} $_PluginDir "/" "\" "+" $_PluginDir
+    ;DetailPrint "--> $R2"
+    
+    ;${If} ${FileExists} $_PluginDir"\X-Plane.exe"
+    ;    MessageBox MB_OK "Exists"
+    ;${EndIf}
+
+    ;IfFileExists "$_PluginDir\*.*" 0 +2
+    ;    DetailPrint $_PluginDir
+        
+    ;IfFileExists $_PluginDir\*.* GoodPath BadPath
+    ;BadPath:
+        
+    ;GoodPath:
+    ;    DetailPrint "Exists"
+    ;    SetOutPath "$_PluginDir\Resources\plugins\xPilot\Resources"
+    ;    File /r ".\Plugin\Resources\*"
+    ;    
+    ;    SetOutPath "$_PluginDir\Resources\plugins\xPilot\win_x64"
+    ;    File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
+    ;    File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
 FunctionEnd
 
 Function StrSlash
@@ -132,22 +171,51 @@ Section "xPilot Plugin" Section_Plugin
 
 SectionIn RO
 
-FileOpen $0 $LOCALAPPDATA\x-plane_install_11.txt r
-LOOP:
-IfErrors exit_loop
-FileRead $0 $1
-    Push $1
-    Push "/"
-    Call StrSlash
-    Pop $R0
-    
-    Push $_PluginDir
-    StrCpy $_PluginDir "$R0"
-    Call CopyPlugin
-    Pop $_PluginDir
-Goto LOOP
-exit_loop:
-FileClose $0
+FileOpen $0 "$LOCALAPPDATA\x-plane_install_11.txt" "r"
+loop:
+    FileRead $0 $1
+    StrCmp $1 "" eof
+    DetailPrint $1
+    Goto eof
+eof:
+    FileClose $0
+
+;FileOpen $0 $LOCALAPPDATA\x-plane_install_11.txt r
+;loop:
+;    FileRead $0 $1
+;    StrCmp $1 "" eof clean
+;    
+;clean:
+;    StrCpy $2 $1 1 -1
+;    StrCmp $2 "/" trim_right
+;    StrCmp $2 "\" trim_right
+;    Goto done
+;trim_right:
+;    StrCpy $1 $1 -1
+;    Goto clean
+;done:
+;    ;DetailPrint $2
+;    Goto loop
+;
+;    ;Push $1
+;    ;Push "/"
+;    ;Call StrSlash
+;    ;Pop $R0
+;
+;    ;StrCpy $_PluginDir $1
+;
+;    ;Push $1
+;    ;Call Trim
+;    ;Pop $R0
+;
+;    ;DetailPrint $R0
+;
+;    ;Push $1
+;    ;Call CopyPlugin
+;
+;    ;Goto loop
+;eof:
+;    FileClose $0
 
 SectionEnd
 
