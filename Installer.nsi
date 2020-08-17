@@ -13,6 +13,7 @@ Unicode True
 !include "Version.txt"
 
 Var _PluginDir
+${StrRep}
 
 ;--------------------------------
 
@@ -62,80 +63,51 @@ FunctionEnd
 ;--------------------------------
 ;Installer Sections
 
-Function isEmptyDir
-  # Stack ->                    # Stack: <directory>
-  Exch $0                       # Stack: $0
-  Push $1                       # Stack: $1, $0
-  FindFirst $0 $1 "$0\*.*"
-  strcmp $1 "." 0 _notempty
-    FindNext $0 $1
-    strcmp $1 ".." 0 _notempty
-      ClearErrors
-      FindNext $0 $1
-      IfErrors 0 _notempty
-        FindClose $0
-        Pop $1                  # Stack: $0
-        StrCpy $0 1
-        Exch $0                 # Stack: 1 (true)
-        goto _end
-     _notempty:
-       FindClose $0
-       ClearErrors
-       Pop $1                   # Stack: $0
-       StrCpy $0 0
-       Exch $0                  # Stack: 0 (false)
-  _end:
-FunctionEnd
-
-Function Trim
-Push $R1
+Function TrimLineFeed
+	Exch $R1 ; Original string
+	Push $R2
 Loop:
-    StrCpy $R2 $R1 1 -1
-    StrCmp $R2 "\" TrimRight
-    Goto Done
-TrimRight:
-    StrCpy $R1 $R1 -1
-    Goto Loop
+	StrCpy $R2 "$R1" 1
+	StrCmp "$R2" " " TrimLeft
+	StrCmp "$R2" "$\r" TrimLeft
+	StrCmp "$R2" "$\n" TrimLeft
+	StrCmp "$R2" "$\t" TrimLeft
+	GoTo Loop2
+TrimLeft:	
+	StrCpy $R1 "$R1" "" 1
+	Goto Loop
+Loop2:
+	StrCpy $R2 "$R1" 1 -1
+	StrCmp "$R2" " " TrimRight
+	StrCmp "$R2" "$\r" TrimRight
+	StrCmp "$R2" "$\n" TrimRight
+	StrCmp "$R2" "$\t" TrimRight
+	GoTo Done
+TrimRight:	
+	StrCpy $R1 "$R1" -1
+	Goto Loop2
 Done:
-    DetailPrint $R1
+	Pop $R2
+	Exch $R1
 FunctionEnd
 
 Function CopyPlugin
-    ;StrCpy $1 $_PluginDir "" -1
-    ;StrCmp $1 "\" 0 +2
-    ;StrCpy $_PluginDir $_PluginDir -1
-    
-    ${If} $R0 != ""
-    
-    ${EndIf}
-    
-    ;${WordReplace} $R1 "\" "" "}*" $R2
-    ;${WordReplace} $R0 "/" "\" "+" $R1
-    ;${WordReplace} $R1 "\" "" "}*" $R2
-    ;${WordReplace} $_PluginDir "/" "\" "+" $_PluginDir
-    ;DetailPrint "--> $R2"
-    
-    ;${If} ${FileExists} $_PluginDir"\X-Plane.exe"
-    ;    MessageBox MB_OK "Exists"
-    ;${EndIf}
-
-    ;IfFileExists "$_PluginDir\*.*" 0 +2
-    ;    DetailPrint $_PluginDir
+${If} $_PluginDir != ""
+    IfFileExists "$_PluginDir\Resources\*.*" Valid Invalid
+    Valid:
+        DetailPrint "Valid X-Plane Path Found: $_PluginDir"
         
-    ;IfFileExists $_PluginDir\*.* GoodPath BadPath
-    ;BadPath:
+        SetOutPath "$_PluginDir\Resources\plugins\xPilot\Resources"
+        DetailPrint "Copying Resources..."
+        File /r ".\Plugin\Resources\*"
         
-    ;GoodPath:
-    ;    DetailPrint "Exists"
-    ;    SetOutPath "$_PluginDir\Resources\plugins\xPilot\Resources"
-    ;    File /r ".\Plugin\Resources\*"
-    ;    
-    ;    SetOutPath "$_PluginDir\Resources\plugins\xPilot\win_x64"
-    ;    File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
-    ;    File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
+        SetOutPath "$_PluginDir\Resources\plugins\xPilot\win_x64"
+        DetailPrint "Copying Plugin..."
+        File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
+        File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
+    Invalid:
+${EndIf}
 FunctionEnd
-
-${StrRep}
 
 Section "xPilot Plugin" Section_Plugin
 
@@ -146,9 +118,10 @@ loop:
     FileRead $0 $1
     StrCmp $1 "" eof parse
 parse:
-    StrCpy $R0 $1
+    Push $1
+    Call TrimLineFeed ; remove trailing line feeds
+    Pop $R0
     ${StrRep} $R1 $R0 "/" "\" ; replace slashes
-    DetailPrint "$R0 -> $R1"
     Goto check
 check:
     StrCpy $R2 $R1 1 -1 ; get last character
@@ -157,47 +130,11 @@ trim:
     StrCpy $R1 $R1 -1 ; copy all but last character
     Goto check
 done:
-    DetailPrint $R1
+    StrCpy $_PluginDir $R1
+    Call CopyPlugin
     Goto loop
 eof:
     FileClose $0
-
-;FileOpen $0 $LOCALAPPDATA\x-plane_install_11.txt r
-;loop:
-;    FileRead $0 $1
-;    StrCmp $1 "" eof clean
-;    
-;clean:
-;    StrCpy $2 $1 1 -1
-;    StrCmp $2 "/" trim_right
-;    StrCmp $2 "\" trim_right
-;    Goto done
-;trim_right:
-;    StrCpy $1 $1 -1
-;    Goto clean
-;done:
-;    ;DetailPrint $2
-;    Goto loop
-;
-;    ;Push $1
-;    ;Push "/"
-;    ;Call StrSlash
-;    ;Pop $R0
-;
-;    ;StrCpy $_PluginDir $1
-;
-;    ;Push $1
-;    ;Call Trim
-;    ;Pop $R0
-;
-;    ;DetailPrint $R0
-;
-;    ;Push $1
-;    ;Call CopyPlugin
-;
-;    ;Goto loop
-;eof:
-;    FileClose $0
 
 SectionEnd
 
@@ -207,10 +144,7 @@ SectionIn RO
 
 SetOutPath "$INSTDIR"
 
-Delete "$INSTDIR\*.dll"
-Delete "$INSTDIR\*.pdb"
-Delete "$INSTDIR\*.exe"
-Delete "$INSTDIR\AppConfig.xml"
+Delete "$INSTDIR\AppConfig.xml" ; remove legacy configuration file
 
 File "..\Pilot-Client\bin\Release\Appccelerate.EventBroker.dll"
 File "..\Pilot-Client\bin\Release\Appccelerate.EventBroker.xml"
@@ -298,6 +232,8 @@ SectionEnd
 ;--------------------------------
 ;Uninstaller Section
 
+${UnStrRep}
+
 Function un.DeleteDirIfEmpty
   FindFirst $R0 $R1 "$0\*.*"
   strcmp $R1 "." 0 NoDelete
@@ -319,57 +255,58 @@ ${IF} $_PluginDir != ""
 ${ENDIF}
 FunctionEnd
 
-Function un.StrSlash
-  Exch $R3 ; $R3 = needle ("\" or "/")
-  Exch
-  Exch $R1 ; $R1 = String to replacement in (haystack)
-  Push $R2 ; Replaced haystack
-  Push $R4 ; $R4 = not $R3 ("/" or "\")
-  Push $R6
-  Push $R7 ; Scratch reg
-  StrCpy $R2 ""
-  StrLen $R6 $R1
-  StrCpy $R4 "\"
-  StrCmp $R3 "/" loop
-  StrCpy $R4 "/"  
-loop:
-  StrCpy $R7 $R1 1
-  StrCpy $R1 $R1 $R6 1
-  StrCmp $R7 $R3 found
-  StrCpy $R2 "$R2$R7"
-  StrCmp $R1 "" done loop
-found:
-  StrCpy $R2 "$R2$R4"
-  StrCmp $R1 "" done loop
-done:
-  StrCpy $R3 $R2
-  Pop $R7
-  Pop $R6
-  Pop $R4
-  Pop $R2
-  Pop $R1
-  Exch $R3
+Function un.TrimLineFeed
+	Exch $R1 ; Original string
+	Push $R2
+Loop:
+	StrCpy $R2 "$R1" 1
+	StrCmp "$R2" " " TrimLeft
+	StrCmp "$R2" "$\r" TrimLeft
+	StrCmp "$R2" "$\n" TrimLeft
+	StrCmp "$R2" "$\t" TrimLeft
+	GoTo Loop2
+TrimLeft:	
+	StrCpy $R1 "$R1" "" 1
+	Goto Loop
+Loop2:
+	StrCpy $R2 "$R1" 1 -1
+	StrCmp "$R2" " " TrimRight
+	StrCmp "$R2" "$\r" TrimRight
+	StrCmp "$R2" "$\n" TrimRight
+	StrCmp "$R2" "$\t" TrimRight
+	GoTo Done
+TrimRight:	
+	StrCpy $R1 "$R1" -1
+	Goto Loop2
+Done:
+	Pop $R2
+	Exch $R1
 FunctionEnd
 
 Section "Uninstall"
 
-; delete plugin
-FileOpen $0 $LOCALAPPDATA\x-plane_install_11.txt r
-LOOP:
-IfErrors exit_loop
-FileRead $0 $1
+FileOpen $0 "$LOCALAPPDATA\x-plane_install_11.txt" "r"
+loop:
+    FileRead $0 $1
+    StrCmp $1 "" eof parse
+parse:
     Push $1
-    Push "/"
-    Call un.StrSlash
+    Call un.TrimLineFeed ; remove trailing line feeds
     Pop $R0
-    
-    Push $_PluginDir
-    StrCpy $_PluginDir "$R0"
+    ${UnStrRep} $R1 $R0 "/" "\" ; replace slashes
+    Goto check
+check:
+    StrCpy $R2 $R1 1 -1 ; get last character
+    StrCmp $R2 "\" trim done ; if slash, goto trim
+trim:
+    StrCpy $R1 $R1 -1 ; copy all but last character
+    Goto check
+done:
+    StrCpy $_PluginDir $R1
     Call un.DeletePlugin
-    Pop $_PluginDir
-Goto LOOP
-exit_loop:
-FileClose $0
+    Goto loop
+eof:
+    FileClose $0
 
 Delete "$SMPROGRAMS\xPilot\xPilot.lnk"
 Delete "$SMPROGRAMS\xPilot\Uninstall xPilot.lnk"
@@ -430,10 +367,12 @@ Delete "$INSTDIR\Vatsim.Fsd.ClientAuth.dll"
 Delete "$INSTDIR\7zxa.dll"
 Delete "$INSTDIR\AppConfig.json"
 Delete "$INSTDIR\TypeCodes.json"
+Delete "$INSTDIR\Bluebell.7z"
 
 RMDir /r "$INSTDIR\NetworkLogs"
 RMDir /r "$INSTDIR\PluginLogs"
 RMDir /r "$INSTDIR\Sounds"
+RMDir /r "$INSTDIR\Plugin"
 
 Delete "$INSTDIR\Uninstall.exe"
 
