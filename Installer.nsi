@@ -7,6 +7,7 @@ Unicode True
 !include x64.nsh
 !include LogicLib.nsh
 !include WordFunc.nsh
+!include StrFunc.nsh
 
 !system "GetProductVersion.exe"
 !include "Version.txt"
@@ -87,17 +88,16 @@ Function isEmptyDir
 FunctionEnd
 
 Function Trim
-Pop $R0
+Push $R1
 Loop:
-    StrCpy $R1 $R0 1 -1
-    StrCmp $R1 "/" TrimRight
-    StrCmp $R1 "\" TrimRight
+    StrCpy $R2 $R1 1 -1
+    StrCmp $R2 "\" TrimRight
     Goto Done
 TrimRight:
-    StrCpy $R0 $R0 -1
+    StrCpy $R1 $R1 -1
     Goto Loop
 Done:
-    DetailPrint $R0
+    DetailPrint $R1
 FunctionEnd
 
 Function CopyPlugin
@@ -135,37 +135,7 @@ Function CopyPlugin
     ;    File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
 FunctionEnd
 
-Function StrSlash
-  Exch $R3 ; $R3 = needle ("\" or "/")
-  Exch
-  Exch $R1 ; $R1 = String to replacement in (haystack)
-  Push $R2 ; Replaced haystack
-  Push $R4 ; $R4 = not $R3 ("/" or "\")
-  Push $R6
-  Push $R7 ; Scratch reg
-  StrCpy $R2 ""
-  StrLen $R6 $R1
-  StrCpy $R4 "\"
-  StrCmp $R3 "/" loop
-  StrCpy $R4 "/"  
-loop:
-  StrCpy $R7 $R1 1
-  StrCpy $R1 $R1 $R6 1
-  StrCmp $R7 $R3 found
-  StrCpy $R2 "$R2$R7"
-  StrCmp $R1 "" done loop
-found:
-  StrCpy $R2 "$R2$R4"
-  StrCmp $R1 "" done loop
-done:
-  StrCpy $R3 $R2
-  Pop $R7
-  Pop $R6
-  Pop $R4
-  Pop $R2
-  Pop $R1
-  Exch $R3
-FunctionEnd
+${StrRep}
 
 Section "xPilot Plugin" Section_Plugin
 
@@ -174,9 +144,21 @@ SectionIn RO
 FileOpen $0 "$LOCALAPPDATA\x-plane_install_11.txt" "r"
 loop:
     FileRead $0 $1
-    StrCmp $1 "" eof
-    DetailPrint $1
-    Goto eof
+    StrCmp $1 "" eof parse
+parse:
+    StrCpy $R0 $1
+    ${StrRep} $R1 $R0 "/" "\" ; replace slashes
+    DetailPrint "$R0 -> $R1"
+    Goto check
+check:
+    StrCpy $R2 $R1 1 -1 ; get last character
+    StrCmp $R2 "\" trim done ; if slash, goto trim
+trim:
+    StrCpy $R1 $R1 -1 ; copy all but last character
+    Goto check
+done:
+    DetailPrint $R1
+    Goto loop
 eof:
     FileClose $0
 
