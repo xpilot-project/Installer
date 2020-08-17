@@ -13,6 +13,7 @@ Unicode True
 !include "Version.txt"
 
 Var _PluginDir
+Var _PathsFound
 ${StrRep}
 
 ;--------------------------------
@@ -53,7 +54,9 @@ InstallDir "$LOCALAPPDATA\xPilot"
 ;---------------------------------
 ;Function
 
-Function .onInit  
+Function .onInit 
+    StrCpy $_PathsFound 0
+    
 	Push $INSTDIR
 	ReadRegStr $INSTDIR HKLM "Software\xPilot" "Client"
 	StrCmp $INSTDIR "" 0 +2
@@ -105,6 +108,8 @@ ${If} $_PluginDir != ""
         DetailPrint "Copying Plugin..."
         File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
         File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
+        
+        IntOp $_PathsFound 1 + 1
     Invalid:
 ${EndIf}
 FunctionEnd
@@ -135,6 +140,11 @@ done:
     Goto loop
 eof:
     FileClose $0
+    
+${If} $_PathsFound == 0
+    MessageBox MB_OK "No valid X-Plane paths were found. The xPilot plugin could not installed."
+    DetailPrint "No valid X-Plane paths were found. The xPilot plugin could not installed."
+${EndIf}
 
 SectionEnd
 
@@ -250,9 +260,12 @@ Function un.DeleteDirIfEmpty
 FunctionEnd
 
 Function un.DeletePlugin
-${IF} $_PluginDir != ""
-    RMDir /r "$_PluginDir\Resources\plugins\xPilot"
-${ENDIF}
+${If} $_PluginDir != ""
+    IfFileExists "$_PluginDir\Resources\*.*" Valid Invalid
+    Valid:
+        RMDir /r "$_PluginDir\Resources\plugins\xPilot"
+    Invalid:
+${EndIf}
 FunctionEnd
 
 Function un.TrimLineFeed
