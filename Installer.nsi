@@ -6,15 +6,9 @@ Unicode True
 !include MUI2.nsh
 !include x64.nsh
 !include LogicLib.nsh
-!include WordFunc.nsh
-!include StrFunc.nsh
 
 !system "GetProductVersion.exe"
 !include "Version.txt"
-
-Var _PluginDir
-Var _PathsFound
-${StrRep}
 
 ;--------------------------------
 
@@ -22,6 +16,8 @@ Name "xPilot"
 BrandingText "xPilot v${Version}"
 OutFile ".\Output\xPilot-Setup-${Version}.exe"
 InstallDir "$LOCALAPPDATA\xPilot"
+
+Var XPLANE_PATH
 
 ;--------------------------------
 ;Pages
