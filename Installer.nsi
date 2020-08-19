@@ -6,6 +6,7 @@ Unicode True
 !include MUI2.nsh
 !include x64.nsh
 !include LogicLib.nsh
+!include StrFunc.nsh
 
 !system "GetProductVersion.exe"
 !include "Version.txt"
@@ -16,6 +17,7 @@ Name "xPilot"
 BrandingText "xPilot v${Version}"
 OutFile ".\Output\xPilot-Setup-${Version}.exe"
 InstallDir "$LOCALAPPDATA\xPilot"
+RequestExecutionLevel Admin
 
 Var XPLANE_PATH
 
@@ -25,12 +27,21 @@ Var XPLANE_PATH
 !define MUI_ABORTWARNING
 !define MUI_WELCOMEPAGE_TEXT "This program will guide you through the installation of xPilot.$\r$\n$\r$\nxPilot and X-Plane must be closed before continuing."
 !insertmacro MUI_PAGE_WELCOME
+!insertmacro MUI_PAGE_LICENSE "LICENSE"
 !insertmacro MUI_PAGE_COMPONENTS
 
 !define MUI_PAGE_HEADER_TEXT "xPilot Pilot Client Installation"
 !define MUI_PAGE_HEADER_SUBTEXT "Choose folder to install the xPilot Pilot Client"
 !define MUI_DIRECTORYPAGE_TEXT_DESTINATION "xPilot Pilot Client Install Location"
 !define MUI_DIRECTORYPAGE_TEXT_TOP "The setup will install the xPilot Pilot Client in the following folder.$\r$\n$\r$\nIt is recommended you leave it set to the local application data folder to prevent permission issues.$\r$\n$\r$\nTo install in a different folder, click Browse and select another folder."	
+!insertmacro MUI_PAGE_DIRECTORY
+
+!define MUI_DIRECTORYPAGE_VARIABLE $XPLANE_PATH
+!define MUI_PAGE_HEADER_TEXT "xPilot Plugin Installation"
+!define MUI_PAGE_HEADER_SUBTEXT "Browse to the folder where X-Plane 11 is installed."
+!define MUI_DIRECTORYPAGE_TEXT_DESTINATION "X-Plane 11 Folder"
+!define MUI_DIRECTORYPAGE_TEXT_TOP "Browse to the folder where X-Plane is installed."
+!define MUI_PAGE_CUSTOMFUNCTION_LEAVE validateXplanePath
 !insertmacro MUI_PAGE_DIRECTORY
 
 !insertmacro MUI_PAGE_INSTFILES
@@ -40,7 +51,7 @@ Var XPLANE_PATH
 !define MUI_FINISHPAGE_RUN_TEXT "Start xPilot"
 !insertmacro MUI_PAGE_FINISH
 
-!define MUI_WELCOMEPAGE_TEXT "This program will uninstall the xPilot Pilot Client and the xPilot plugin from all X-Plane installations on this computer.$\r$\n$\r$\n** NOTICE ** CSL models installed in Resources\plugins\xPilot\Resources\CSL will be deleted."
+!define MUI_WELCOMEPAGE_TEXT "This program will uninstall the xPilot Pilot Client. You will need to manually remove the xPilot plugin and its respective resource files from X-Plane."
 !insertmacro MUI_UNPAGE_WELCOME
 !insertmacro MUI_UNPAGE_CONFIRM
 !insertmacro MUI_UNPAGE_INSTFILES
@@ -51,96 +62,83 @@ Var XPLANE_PATH
 ;Function
 
 Function .onInit 
-    StrCpy $_PathsFound 0
-    
 	Push $INSTDIR
 	ReadRegStr $INSTDIR HKLM "Software\xPilot" "Client"
 	StrCmp $INSTDIR "" 0 +2
 	Pop $INSTDIR
+    
+	Push $XPLANE_PATH
+	ReadRegStr $XPLANE_PATH HKLM "Software\xPilot" "XPlane"
+	StrCmp $XPLANE_PATH "" 0 +2
+	Pop $XPLANE_PATH
 FunctionEnd
 
 ;--------------------------------
 ;Installer Sections
 
-Function TrimLineFeed
-	Exch $R1 ; Original string
-	Push $R2
-Loop:
-	StrCpy $R2 "$R1" 1
-	StrCmp "$R2" " " TrimLeft
-	StrCmp "$R2" "$\r" TrimLeft
-	StrCmp "$R2" "$\n" TrimLeft
-	StrCmp "$R2" "$\t" TrimLeft
-	GoTo Loop2
-TrimLeft:	
-	StrCpy $R1 "$R1" "" 1
-	Goto Loop
-Loop2:
-	StrCpy $R2 "$R1" 1 -1
-	StrCmp "$R2" " " TrimRight
-	StrCmp "$R2" "$\r" TrimRight
-	StrCmp "$R2" "$\n" TrimRight
-	StrCmp "$R2" "$\t" TrimRight
-	GoTo Done
-TrimRight:	
-	StrCpy $R1 "$R1" -1
-	Goto Loop2
-Done:
-	Pop $R2
-	Exch $R1
+Function validateXplanePath
+    IfFileExists "$XPLANE_PATH\X-Plane.exe" valid invalid
+    invalid:
+        MessageBox MB_YESNO "The X-Plane folder path you specified does not appear to be a valid. Selecting the wrong path can prevent the xPilot plugin from being installed properly. Do you want to use this folder path anyways?" IDYES true IDNO false
+        true:
+        goto valid
+        false:
+        Abort
+    valid:
 FunctionEnd
 
-Function CopyPlugin
-${If} $_PluginDir != ""
-    IfFileExists "$_PluginDir\Resources\*.*" Valid Invalid
-    Valid:
-        DetailPrint "Valid X-Plane Path Found: $_PluginDir"
-        
-        SetOutPath "$_PluginDir\Resources\plugins\xPilot\Resources"
-        DetailPrint "Copying Resources..."
-        File /r ".\Plugin\Resources\*"
-        
-        SetOutPath "$_PluginDir\Resources\plugins\xPilot\win_x64"
-        DetailPrint "Copying Plugin..."
-        File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
-        File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
-        
-        IntOp $_PathsFound 1 + 1
-    Invalid:
-${EndIf}
+Function StrSlash
+  Exch $R3 ; $R3 = needle ("\" or "/")
+  Exch
+  Exch $R1 ; $R1 = String to replacement in (haystack)
+  Push $R2 ; Replaced haystack
+  Push $R4 ; $R4 = not $R3 ("/" or "\")
+  Push $R6
+  Push $R7 ; Scratch reg
+  StrCpy $R2 ""
+  StrLen $R6 $R1
+  StrCpy $R4 "\"
+  StrCmp $R3 "/" loop
+  StrCpy $R4 "/"  
+loop:
+  StrCpy $R7 $R1 1
+  StrCpy $R1 $R1 $R6 1
+  StrCmp $R7 $R3 found
+  StrCpy $R2 "$R2$R7"
+  StrCmp $R1 "" done loop
+found:
+  StrCpy $R2 "$R2$R4"
+  StrCmp $R1 "" done loop
+done:
+  StrCpy $R3 $R2
+  Pop $R7
+  Pop $R6
+  Pop $R4
+  Pop $R2
+  Pop $R1
+  Exch $R3
 FunctionEnd
 
 Section "xPilot Plugin" Section_Plugin
 
 SectionIn RO
 
-FileOpen $0 "$LOCALAPPDATA\x-plane_install_11.txt" "r"
-loop:
-    FileRead $0 $1
-    StrCmp $1 "" eof parse
-parse:
-    Push $1
-    Call TrimLineFeed ; remove trailing line feeds
-    Pop $R0
-    ${StrRep} $R1 $R0 "/" "\" ; replace slashes
-    Goto check
-check:
-    StrCpy $R2 $R1 1 -1 ; get last character
-    StrCmp $R2 "\" trim done ; if slash, goto trim
-trim:
-    StrCpy $R1 $R1 -1 ; copy all but last character
-    Goto check
-done:
-    StrCpy $_PluginDir $R1
-    Call CopyPlugin
-    Goto loop
-eof:
-    FileClose $0
-    
-${If} $_PathsFound == 0
-    MessageBox MB_OK "No valid X-Plane paths were found. The xPilot plugin could not installed."
-    DetailPrint "No valid X-Plane paths were found. The xPilot plugin could not installed."
-${EndIf}
+Push $XPLANE_PATH
+Push "/"
+Call StrSlash
+Pop $R0
+StrCpy $XPLANE_PATH $R0
+
+SetOutPath "$XPLANE_PATH\Resources\plugins\xPilot"
+
+File /r ".\Plugin\*"
+
+SetOutPath "$XPLANE_PATH\Resources\plugins\xPilot\win_x64"
+
+File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
+File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
+
+WriteRegStr HKLM "Software\xPilot" "XPlane" $XPLANE_PATH
 
 SectionEnd
 
@@ -216,7 +214,10 @@ File "Sounds\PrivateMessage.wav"
 File "Sounds\RadioMessage.wav"
 File "Sounds\SelCal.wav"
 
-SetOutPath "$INSTDIR\Plugin"
+SetOutPath "$INSTDIR\Plugin\xPilot"
+File /r ".\Plugin\*"
+
+SetOutPath "$INSTDIR\Plugin\xPilot\win_x64"
 File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
 File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
 
@@ -238,8 +239,6 @@ SectionEnd
 ;--------------------------------
 ;Uninstaller Section
 
-${UnStrRep}
-
 Function un.DeleteDirIfEmpty
   FindFirst $R0 $R1 "$0\*.*"
   strcmp $R1 "." 0 NoDelete
@@ -255,67 +254,7 @@ Function un.DeleteDirIfEmpty
    FindClose $R0
 FunctionEnd
 
-Function un.DeletePlugin
-${If} $_PluginDir != ""
-    IfFileExists "$_PluginDir\Resources\*.*" Valid Invalid
-    Valid:
-        RMDir /r "$_PluginDir\Resources\plugins\xPilot"
-    Invalid:
-${EndIf}
-FunctionEnd
-
-Function un.TrimLineFeed
-	Exch $R1 ; Original string
-	Push $R2
-Loop:
-	StrCpy $R2 "$R1" 1
-	StrCmp "$R2" " " TrimLeft
-	StrCmp "$R2" "$\r" TrimLeft
-	StrCmp "$R2" "$\n" TrimLeft
-	StrCmp "$R2" "$\t" TrimLeft
-	GoTo Loop2
-TrimLeft:	
-	StrCpy $R1 "$R1" "" 1
-	Goto Loop
-Loop2:
-	StrCpy $R2 "$R1" 1 -1
-	StrCmp "$R2" " " TrimRight
-	StrCmp "$R2" "$\r" TrimRight
-	StrCmp "$R2" "$\n" TrimRight
-	StrCmp "$R2" "$\t" TrimRight
-	GoTo Done
-TrimRight:	
-	StrCpy $R1 "$R1" -1
-	Goto Loop2
-Done:
-	Pop $R2
-	Exch $R1
-FunctionEnd
-
 Section "Uninstall"
-
-FileOpen $0 "$LOCALAPPDATA\x-plane_install_11.txt" "r"
-loop:
-    FileRead $0 $1
-    StrCmp $1 "" eof parse
-parse:
-    Push $1
-    Call un.TrimLineFeed ; remove trailing line feeds
-    Pop $R0
-    ${UnStrRep} $R1 $R0 "/" "\" ; replace slashes
-    Goto check
-check:
-    StrCpy $R2 $R1 1 -1 ; get last character
-    StrCmp $R2 "\" trim done ; if slash, goto trim
-trim:
-    StrCpy $R1 $R1 -1 ; copy all but last character
-    Goto check
-done:
-    StrCpy $_PluginDir $R1
-    Call un.DeletePlugin
-    Goto loop
-eof:
-    FileClose $0
 
 Delete "$SMPROGRAMS\xPilot\xPilot.lnk"
 Delete "$SMPROGRAMS\xPilot\Uninstall xPilot.lnk"
