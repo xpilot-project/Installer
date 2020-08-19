@@ -20,6 +20,7 @@ InstallDir "$LOCALAPPDATA\xPilot"
 RequestExecutionLevel Admin
 
 Var XPLANE_PATH
+Var XPLANE_PATH_TEMP
 
 ;--------------------------------
 ;Pages
@@ -33,16 +34,10 @@ Var XPLANE_PATH
 !define MUI_PAGE_HEADER_TEXT "xPilot Pilot Client Installation"
 !define MUI_PAGE_HEADER_SUBTEXT "Choose folder to install the xPilot Pilot Client"
 !define MUI_DIRECTORYPAGE_TEXT_DESTINATION "xPilot Pilot Client Install Location"
-!define MUI_DIRECTORYPAGE_TEXT_TOP "The setup will install the xPilot Pilot Client in the following folder.$\r$\n$\r$\nIt is recommended you leave it set to the local application data folder to prevent permission issues.$\r$\n$\r$\nTo install in a different folder, click Browse and select another folder."	
+!define MUI_DIRECTORYPAGE_TEXT_TOP "The setup will install the xPilot Pilot Client in the following folder.$\r$\n$\r$\nIt is recommended you leave it set to the local application data folder to prevent permission issues.$\r$\n$\r$\nTo install in a different folder, click Browse and select another folder."
 !insertmacro MUI_PAGE_DIRECTORY
 
-!define MUI_DIRECTORYPAGE_VARIABLE $XPLANE_PATH
-!define MUI_PAGE_HEADER_TEXT "xPilot Plugin Installation"
-!define MUI_PAGE_HEADER_SUBTEXT "Browse to the folder where X-Plane 11 is installed."
-!define MUI_DIRECTORYPAGE_TEXT_DESTINATION "X-Plane 11 Folder"
-!define MUI_DIRECTORYPAGE_TEXT_TOP "Browse to the folder where X-Plane is installed."
-!define MUI_PAGE_CUSTOMFUNCTION_LEAVE validateXplanePath
-!insertmacro MUI_PAGE_DIRECTORY
+Page custom pgXplanePath pgXplanePathLeave
 
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_NOAUTOCLOSE
@@ -61,30 +56,16 @@ Var XPLANE_PATH
 ;---------------------------------
 ;Function
 
-Function .onInit 
+Function .onInit
 	Push $INSTDIR
 	ReadRegStr $INSTDIR HKLM "Software\xPilot" "Client"
 	StrCmp $INSTDIR "" 0 +2
 	Pop $INSTDIR
-    
+
 	Push $XPLANE_PATH
 	ReadRegStr $XPLANE_PATH HKLM "Software\xPilot" "XPlane"
 	StrCmp $XPLANE_PATH "" 0 +2
 	Pop $XPLANE_PATH
-FunctionEnd
-
-;--------------------------------
-;Installer Sections
-
-Function validateXplanePath
-    IfFileExists "$XPLANE_PATH\X-Plane.exe" valid invalid
-    invalid:
-        MessageBox MB_YESNO "The X-Plane folder path you specified does not appear to be a valid. Selecting the wrong path can prevent the xPilot plugin from being installed properly. Do you want to use this folder path anyways?" IDYES true IDNO false
-        true:
-        goto valid
-        false:
-        Abort
-    valid:
 FunctionEnd
 
 Function StrSlash
@@ -99,7 +80,7 @@ Function StrSlash
   StrLen $R6 $R1
   StrCpy $R4 "\"
   StrCmp $R3 "/" loop
-  StrCpy $R4 "/"  
+  StrCpy $R4 "/"
 loop:
   StrCpy $R7 $R1 1
   StrCpy $R1 $R1 $R6 1
@@ -119,27 +100,76 @@ done:
   Exch $R3
 FunctionEnd
 
-Section "xPilot Plugin" Section_Plugin
+Function pgXplanePath
+    !insertmacro MUI_HEADER_TEXT "X-Plane 11 Path" "Browse to the folder where X-Plane 11 is installed."
+    nsDialogs::Create 1018
 
-SectionIn RO
+    ${NSD_CreateLabel} 0 0 100% 12u "Select the X-Plane 11 folder where X-Plane.exe is located."
 
-Push $XPLANE_PATH
-Push "/"
-Call StrSlash
-Pop $R0
-StrCpy $XPLANE_PATH $R0
+    ${NSD_CreateGroupBox} 0 20u 100% 40u "X-Plane 11 Folder"
+    Pop $0
 
-SetOutPath "$XPLANE_PATH\Resources\plugins\xPilot"
+    ${NSD_CreateDirRequest} 15 37u 76% 13u "$XPLANE_PATH"
+    Pop $XPLANE_PATH_TEMP
 
-File /r ".\Plugin\*"
+    ${NSD_CreateBrowseButton} 81% 37u 15% 13u "Browse..."
+    Pop $0
+    ${NSD_OnClick} $0 OnDirBrowse
 
-SetOutPath "$XPLANE_PATH\Resources\plugins\xPilot\win_x64"
+    ${NSD_CreateLabel} 0 120 100% 12u "**Advanced Users**"
+    ${NSD_CreateLabeL} 0 145 100% 25u "If X-Plane is not installed on this machine, leave the folder path empty then click 'Install' to skip installing the xPilot plugin."
+    ${NSD_CreateLabel} 0 180 100% 25u "The xPilot plugin files are in the xPilot Client Application folder if you need to manually install the plugin on another machine."
 
-File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
-File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
+    nsDialogs::Show
+FunctionEnd
 
-WriteRegStr HKLM "Software\xPilot" "XPlane" $XPLANE_PATH
+Function OnDirBrowse
+    ${NSD_GetText} $XPLANE_PATH_TEMP $0
+    nsDialogs::SelectFolderDialog "Select X-Plane 11 Folder" "$0"
+    Pop $0
+    ${If} $0 != error
+        ${NSD_SetText} $XPLANE_PATH_TEMP "$0"
+    ${EndIf}
+FunctionEnd
 
+Function pgXplanePathLeave
+    ${NSD_GetText} $XPLANE_PATH_TEMP $XPLANE_PATH
+    ${If} $XPLANE_PATH != ""
+        ; validate path
+        IfFileExists "$XPLANE_PATH\X-Plane.exe" valid invalid
+        invalid:
+            MessageBox MB_YESNO "The X-Plane folder path you specified does not appear to be a valid. Selecting the wrong path can prevent the xPilot plugin from being installed properly.$\r$\n$\r$\nDo you want to use this folder path anyways?" IDYES true IDNO false
+            true:
+            goto valid
+            false:
+            Abort
+        valid:
+    ${EndIf}
+FunctionEnd
+
+Section "xPilot Plugin" SecPlugin
+    SectionIn RO
+    
+    ${If} $XPLANE_PATH != ""
+        ; fix path formatting
+        Push $XPLANE_PATH
+        Push "/"
+        Call StrSlash
+        Pop $R0
+        StrCpy $XPLANE_PATH $R0
+
+        ; copy plugin files
+        SetOutPath "$XPLANE_PATH\Resources\plugins\xPilot"
+
+        File /r ".\Plugin\*"
+
+        SetOutPath "$XPLANE_PATH\Resources\plugins\xPilot\win_x64"
+
+        File "..\Plugin\build\x64\Release\win_x64\xPilot.xpl"
+        File "..\Plugin\build\x64\Release\win_x64\xPilot.pdb"
+        
+        WriteRegStr HKLM "Software\xPilot" "XPlane" $XPLANE_PATH
+    ${EndIf}
 SectionEnd
 
 Section "xPilot Pilot Client" SecCopyUI
